@@ -172,8 +172,6 @@ exports.purchaseTicket = (event, context, callback) => {
           return callback(null, response(202, { success: true }))
         }
       )
-
-      return callback(null, response(202, { success: true }))
     })
   })
 }
