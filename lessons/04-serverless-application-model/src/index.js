@@ -40,14 +40,25 @@ function response (code, body) {
   }
 }
 
+function withErrorHandler (block) {
+  try {
+    block()
+  } catch (err) {
+    console.error(err)
+    return callback(null, response(500, { message: 'Internal server error' }))
+  }
+}
+
 exports.listGigs = (event, context, callback) => {
-  return Gig.findAll(gigs => {
-    return callback(null, response(200, { gigs }))
+  withErrorHandler(() => {
+    return Gig.findAll(gigs => {
+      return callback(null, response(200, { gigs }))
+    })
   })
 }
 
 exports.gig = (event, context, callback) => {
-  try {
+  withErrorHandler(() => {
     const { pathParameters: { slug } } = event
     return Gig.findBySlug(slug, gig => {
       const result = gig
@@ -55,8 +66,5 @@ exports.gig = (event, context, callback) => {
         : response(404, { error: 'Gig not found' })
       return callback(null, result)
     })
-  } catch (err) {
-    console.error(err)
-    return callback(null, response(500, { message: 'Internal server error' }))
-  }
+  })
 }
