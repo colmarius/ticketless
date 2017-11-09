@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk')
 const docClient = new AWS.DynamoDB.DocumentClient()
-const sns = AWS.SNS()
+const sns = new AWS.SNS()
 const validator = require('validator')
 const uuidv4 = require('uuid/v4')
 
