@@ -4,12 +4,39 @@ Description: A Mock API to return all gigs or a single gig
 
 Resources:
 
+  GigsApiRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowLambdaServiceToAssumeRole"
+            Effect: "Allow"
+            Action:
+              - "sts:AssumeRole"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+      Policies:
+        - PolicyName: "GigsApiDynamoDBPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "dynamodb:Scan"
+                  - "dynamodb:GetItem"
+                Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/gig'
+
   listGigs:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ./src
       Handler: index.listGigs
       Runtime: nodejs6.10
+      Role: !GetAtt GigsApiRole.Arn
       Events:
         Endpoint:
           Type: Api
@@ -23,6 +50,7 @@ Resources:
       CodeUri: ./src
       Handler: index.gig
       Runtime: nodejs6.10
+      Role: !GetAtt GigsApiRole.Arn
       Events:
         Endpoint:
           Type: Api
