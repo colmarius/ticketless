@@ -2,8 +2,25 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
 Description: Api and services for the ticketless application
 
-Resources:
+Parameters:
+  SmtpHost:
+    Description: The SMTP Host to send emails
+    Type: String
+  SmtpPort:
+    Description: The port for the SMTP server (generally 25 or 465)
+    Type: Number
+    Default: 465
+  SmtpSenderAddress:
+    Description: "The email address to send emails from"
+    Type: String
+  SmtpUsername:
+    Description: "The username to authenticate to the SMTP server"
+    Type: String
+  SmtpPassword:
+    Description: "The password to authenticate to the SMTP server"
+    Type: String
 
+Resources:
   GigsApiRole:
     Type: "AWS::IAM::Role"
     Properties:
