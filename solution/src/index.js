@@ -1,5 +1,6 @@
 const AWS = require('aws-sdk')
 const docClient = new AWS.DynamoDB.DocumentClient()
+const validator = require('validator')
 
 const Gig = {
   findAll (result) {
@@ -67,4 +68,55 @@ exports.gig = (event, context, callback) => {
       return callback(null, result)
     })
   })
+}
+
+const purchaseFields = [
+  'gig',
+  'name',
+  'email',
+  'cardNumber',
+  'cardExpiryMonth',
+  'cardExpiryYear',
+  'cardCVC',
+  'disclaimerAccepted'
+]
+
+exports.purchaseTicket = (event, context, callback) => {
+  let data
+
+  try {
+    data = JSON.parse(event.body)
+  } catch (err) {
+    return callback(
+      null,
+      response(400, { error: 'Invalid content, expected valid JSON' })
+    )
+  }
+
+  const errors = []
+
+  purchaseFields.forEach(field => {
+    if (!data[field]) {
+      errors.push({ field: field, message: 'field is mandatory' })
+    }
+  })
+
+  if (errors.length) {
+    return callback(null, response(400, { error: 'Invalid request', errors }))
+  }
+
+  Gig.findBySlug(data.gig, gig => {
+    if (!gig) return callback(null, response(404, { error: 'Gig not found' }))
+
+    // Validate "data"
+    if (errors.length) {
+      // 2. validate all other fields
+      // ...
+    }
+  })
+
+  // 4. if everything went well return a 202 (accepted)
+  // ...
+
+  return callback(null, response(202, { success: true }))
 }

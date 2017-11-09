@@ -1,0 +1,15 @@
+{
+  "name": "Ticketless",
+  "version": "0.1.0",
+  "description": "November 2017 - Codemotion AWS Serverless Workshop",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "validator": "^9.1.1"
+  }
+}

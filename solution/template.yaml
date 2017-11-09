@@ -58,6 +58,20 @@ Resources:
             Path: /gigs/{slug}
             Method: get
 
+  purchaseTicket:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./src
+      Handler: index.purchaseTicket
+      Runtime: nodejs6.10
+      Role: !GetAtt GigsApiRole.Arn
+      Events:
+        Endpoint:
+          Type: Api
+          Properties:
+            Path: /purchase
+            Method: post
+
 Outputs:
   endpoint:
     Description: The API Gateway endpoint for ticketless
