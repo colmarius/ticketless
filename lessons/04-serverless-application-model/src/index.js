@@ -1,3 +1,18 @@
+const AWS = require('aws-sdk')
+const docClient = new AWS.DynamoDB.DocumentClient()
+
+function findAllGigs (result) {
+  const queryParams = { TableName: 'gig' }
+  docClient.scan(queryParams, (err, data) => {
+    if (err) {
+      console.error(err)
+      throw err
+    }
+
+    return result(data.Items)
+  })
+}
+
 const mockGigs = [...Array(12).keys()].map(i => ({
   slug: `band${i}-location${i}`,
   bandName: `Mock Band ${i}`,
@@ -31,7 +46,9 @@ function response (code, body) {
 }
 
 exports.listGigs = (event, context, callback) => {
-  return callback(null, response(200, { gigs: mockGigs }))
+  return findAllGigs(gigs => {
+    callback(null, response(200, { gigs }))
+  })
 }
 
 exports.gig = (event, context, callback) => {
