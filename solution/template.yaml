@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: 'AWS::Serverless-2016-10-31'
-Description: A Mock API to return all gigs or a single gig
+Description: Api and services for the ticketless application
 
 Resources:
 
@@ -29,6 +29,42 @@ Resources:
                   - "dynamodb:Scan"
                   - "dynamodb:GetItem"
                 Resource: !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/gig'
+              - Effect: "Allow"
+                Action:
+                  - "sns:Publish"
+                Resource: !Ref TicketPurchasedTopic
+
+  TicketPurchasedQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      QueueName: "ticketless-ticketPurchased"
+
+  TicketPurchasedTopic:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      TopicName: "ticketless-ticketPurchased"
+      Subscription:
+        - Endpoint: !GetAtt TicketPurchasedQueue.Arn
+          Protocol: "sqs"
+
+  QueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - Ref: TicketPurchasedQueue
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: "ReceiveFromSnsPolicy"
+        Statement:
+          - Sid: "ReceiveFromSns"
+            Effect: "Allow"
+            Principal: "*"
+            Action:
+              - sqs:SendMessage
+            Resource: "*"
+            Condition:
+              ArnEquals:
+                "aws:SourceArn": !Ref TicketPurchasedTopic
 
   listGigs:
     Type: AWS::Serverless::Function
@@ -37,6 +73,7 @@ Resources:
       Handler: index.listGigs
       Runtime: nodejs6.10
       Role: !GetAtt GigsApiRole.Arn
+
       Events:
         Endpoint:
           Type: Api
@@ -65,6 +102,9 @@ Resources:
       Handler: index.purchaseTicket
       Runtime: nodejs6.10
       Role: !GetAtt GigsApiRole.Arn
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref TicketPurchasedTopic
       Events:
         Endpoint:
           Type: Api
@@ -84,6 +124,7 @@ Resources:
           Properties:
             Path: /{path+}
             Method: options
+
 Outputs:
   endpoint:
     Description: The API Gateway endpoint for ticketless
