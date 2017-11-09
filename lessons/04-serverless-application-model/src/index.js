@@ -15,9 +15,7 @@ function findAllGigs (result) {
 
 function findGigBySlug (slug, result) {
   const queryParams = {
-    Key: {
-      thePrimaryKey: 'slug'
-    },
+    Key: { slug: slug },
     TableName: 'gig'
   }
   docClient.get(queryParams, (err, data) => {
