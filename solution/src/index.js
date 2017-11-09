@@ -1,8 +1,12 @@
 const AWS = require('aws-sdk')
 const docClient = new AWS.DynamoDB.DocumentClient()
 const sns = new AWS.SNS()
+const sqs = new AWS.SQS()
+
 const validator = require('validator')
 const uuidv4 = require('uuid/v4')
+const nodemailer = require('nodemailer')
+const smtpTransport = require('nodemailer-smtp-transport')
 
 const Gig = {
   findAll (result) {
@@ -173,6 +177,98 @@ exports.purchaseTicket = (event, context, callback) => {
         }
       )
     })
+  })
+}
+
+const Queue = {
+  nextMessage (onMessageReceived) {
+    const { SQS_QUEUE_URL } = process.env
+
+    const receiveMessageParams = {
+      QueueUrl: SQS_QUEUE_URL,
+      MaxNumberOfMessages: 1
+    }
+
+    sqs.receiveMessage(receiveMessageParams, (err, data) => {
+      onMessageReceived(err, data)
+    })
+  }
+}
+
+const Mailer = {
+  sendEmail ({ to, subject, text }, result) {
+    const {
+      SMTP_HOST,
+      SMTP_PORT,
+      SMTP_USERNAME,
+      SMTP_PASSWORD,
+      SMTP_SENDER_ADDRESS
+    } = process.env
+    const transporter = nodemailer.createTransport(
+      smtpTransport({
+        host: SMTP_HOST,
+        port: SMTP_PORT,
+        auth: {
+          user: SMTP_USERNAME,
+          pass: SMTP_PASSWORD
+        }
+      })
+    )
+    const mailOptions = {
+      from: SMTP_SENDER_ADDRESS,
+      to,
+      subject,
+      text
+    }
+
+    console.log({
+      SMTP_HOST,
+      SMTP_PORT,
+      SMTP_USERNAME,
+      SMTP_PASSWORD,
+      SMTP_SENDER_ADDRESS,
+      SMTP_SENDER_ADDRESS,
+      mailOptions
+    })
+
+    transporter.sendMail(mailOptions, (err, info) => {
+      return result(err, info)
+    })
+  }
+}
+
+exports.sendMailWorker = (event, context, callback) => {
+  Queue.nextMessage((err, data) => {
+    if (err) {
+      console.error(err)
+      return callback(null, response(500, { error: 'Failed to read message' }))
+    } else {
+      if (data.Messages) {
+        console.log(data.Messages)
+
+        const fistMessage = data.Messages[0]
+        const firstMessageContent = JSON.parse(
+          JSON.parse(fistMessage.Body).Message
+        )
+        const { ticket, gig } = firstMessageContent
+
+        const params = {
+          to: ticket.email,
+          subject: 'Congrats! You bought a new gig',
+          text: `Hey how are you today ${ticket.name}?`
+        }
+
+        Mailer.sendEmail(params, (err, info) => {
+          if (err) {
+            console.error('Error sending email', err)
+          } else {
+            console.log('Mail sent successfully!')
+          }
+        })
+      } else {
+        console.log('No message available')
+      }
+    }
   })
 }
 
