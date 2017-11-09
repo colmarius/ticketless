@@ -1,6 +1,8 @@
 const AWS = require('aws-sdk')
 const docClient = new AWS.DynamoDB.DocumentClient()
+const sns = AWS.SNS()
 const validator = require('validator')
+const uuidv4 = require('uuid/v4')
 
 const Gig = {
   findAll (result) {
@@ -145,13 +147,35 @@ exports.purchaseTicket = (event, context, callback) => {
   Purchase.parseAndValidate(event.body, callback, data => {
     Gig.findBySlug(data.gig, gig => {
       if (!gig) return callback(null, response(404, { error: 'Gig not found' }))
+
+      const ticket = {
+        id: uuidv4(),
+        createdAt: Date.now(),
+        name: data.name,
+        email: data.email,
+        gig: data.gig
+      }
+
+      sns.publish(
+        {
+          TopicArn: process.env.SNS_TOPIC_ARN,
+          Message: JSON.stringify({ ticket, gig })
+        },
+        (err, data) => {
+          if (err) {
+            console.error(err)
+            return callback(
+              null,
+              response(500, { message: 'Internal server error' })
+            )
+          }
+          return callback(null, response(202, { success: true }))
+        }
+      )
+
+      return callback(null, response(202, { success: true }))
     })
   })
-
-  // 4. if everything went well return a 202 (accepted)
-  // ...
-
-  return callback(null, response(202, { success: true }))
 }
 
 exports.cors = (event, context, callback) => {
