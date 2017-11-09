@@ -25,7 +25,7 @@ function findGigBySlug (slug, result) {
       console.error(err)
       throw err
     }
-    result(data.Item)
+    return result(data.Item)
   })
 }
 
@@ -47,11 +47,22 @@ exports.listGigs = (event, context, callback) => {
 }
 
 exports.gig = (event, context, callback) => {
-  const { pathParameters: { slug } } = event
-  return findGigBySlug(slug, gig => {
-    const result = gig
-      ? response(200, gig)
-      : response(404, { error: 'Gig not found' })
-    callback(null, result)
-  })
+  try {
+    const { pathParameters: { slug } } = event
+    return findGigBySlug(slug, gig => {
+      const result = gig
+        ? response(200, gig)
+        : response(404, { error: 'Gig not found' })
+      callback(null, result)
+    })
+  } catch (err) {
+    console.error(err)
+    return callback(null, {
+      statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: { error: err }
+    })
+  }
 }
