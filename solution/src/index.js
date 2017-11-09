@@ -99,6 +99,51 @@ const Purchase = {
         errors.push({ field: field, message: 'field is mandatory' })
       }
     })
+
+    const defaultValidations = [
+      {
+        field: 'email',
+        validate: 'isEmail',
+        message: 'field is not a valid email'
+      },
+      {
+        field: 'cardNumber',
+        validate: 'isCreditCard',
+        message: 'field is not a valid credit card number'
+      },
+      {
+        field: 'cardExpiryMonth',
+        validate: 'isInt',
+        options: { min: 1, max: 12 },
+        message: 'field must be an integer in range [1,12]'
+      },
+      {
+        field: 'cardExpiryYear',
+        validate: 'isInt',
+        options: { min: 2018, max: 2024 },
+        message: 'field must be an integer in range [2018,2024]'
+      }
+    ]
+
+    defaultValidations.each(({ field, validate, message, options = {} }) => {
+      const fieldValidator = validator[validate]
+      const fieldValue = String(data[field])
+
+      if (!fieldValidator(fieldValue, options)) {
+        errors.push({ field, message })
+      }
+    })
+
+    if (!String(data.cardCVC).match(/^[0-9]{3,4}$/)) {
+      errors.push({ field: 'cardCVC', message: 'field must be a valid CVC' })
+    }
+    if (data.disclaimerAccepted !== true) {
+      errors.push({
+        field: 'disclaimerAccepted',
+        message: 'field must be true'
+      })
+    }
+
     if (errors.length) {
       return callback(null, response(400, { error: 'Invalid request', errors }))
     }
