@@ -192,6 +192,21 @@ const Queue = {
     sqs.receiveMessage(receiveMessageParams, (err, data) => {
       onMessageReceived(err, data)
     })
+  },
+
+  deleteMessage (receiptHandle, onDeleteSuccess) {
+    const { SQS_QUEUE_URL } = process.env
+
+    const deleteMessageParams = {
+      QueueUrl: SQS_QUEUE_URL,
+      ReceiptHandle: receiptHandle
+    }
+    sqs.deleteMessage(deleteMessageParams, (err, data) => {
+      if (err) {
+        console.error(err)
+      }
+      onDeleteSuccess()
+    })
   }
 }
 
@@ -237,6 +252,32 @@ const Mailer = {
   }
 }
 
+function PurchaseEmailParams ({ ticket, gig }) {
+  const to = ticket.email
+  const subject = `Your ticket for ${gig.bandName} in ${gig.city}`
+  const text = `
+Hey ${ticket.name},
+you are going to see ${gig.bandName} in ${gig.city}!
+This is the secret code that will give you access to our time travel collection point:
+---
+${ticket.id}
+---
+Be sure to show it to our staff at entrance.
+Collection point is placed in ${gig.collectionPoint}.
+Be sure to be there on ${gig.date} at ${gig.collectionTime}
+We already look forward (or maybe backward) to having you there, it's going to be epic!
+— Your friendly Ticketless staff
+PS: remember that is forbidden to place bets or do any other action that might substantially
+increase your net worth while time travelling. Travel safe!
+`
+
+  return {
+    to,
+    subject,
+    text
+  }
+}
+
 exports.sendMailWorker = (event, context, callback) => {
   Queue.nextMessage((err, data) => {
     if (err) {
@@ -251,18 +292,16 @@ exports.sendMailWorker = (event, context, callback) => {
           JSON.parse(fistMessage.Body).Message
         )
         const { ticket, gig } = firstMessageContent
-
-        const params = {
-          to: ticket.email,
-          subject: 'Congrats! You bought a new gig',
-          text: `Hey how are you today ${ticket.name}?`
-        }
+        const params = PurchaseEmailParams({ ticket, gig })
 
         Mailer.sendEmail(params, (err, info) => {
           if (err) {
             console.error('Error sending email', err)
           } else {
             console.log('Mail sent successfully!')
+            Queue.deleteMessage(fistMessage.ReceiptHandle, () => {
+              console.log('Message deleted successfully!')
+            })
           }
         })
       } else {
