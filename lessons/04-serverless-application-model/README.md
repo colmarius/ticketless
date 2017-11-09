@@ -124,6 +124,8 @@ Let's analyze the content of this file:
 
   - The block `Output` at the end of the file, it's not strictly mandatory but it will help us to retrieve the URL of our API. API Gateway will create a random endpoint URL and by exporting it, we will be able to easily reference to it.
 
+Here can be found [aws-sam-local](https://github.com/awslabs/aws-sam-local) command line utility.
+
 >💡 **TIP**: the SAM command line utility offers an helper that allows you to validate a template file. To try it out, run the following command.
 > ```bash
 > sam validate --template template.yaml
