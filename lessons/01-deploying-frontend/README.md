@@ -37,7 +37,7 @@ An S3 bucket can be named by following the same conventions of DNS names, which 
 To create a bucket in your account you can run the following command:
 
 ```bash
-export FRONTEND_BUCKET=ticketless-frontend-$(head /dev/urandom | env LC_CTYPE=C tr -cd 'a-z0-9' | head -c 6)
+export FRONTEND_BUCKET=ticketless-frontend-$(head /dev/urandom | env LC_CTYPE=C LC_ALL=C tr -cd 'a-z0-9' | head -c 6)
 aws s3 mb s3://$FRONTEND_BUCKET --region eu-west-1
 ```
 
